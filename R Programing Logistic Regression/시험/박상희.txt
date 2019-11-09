@@ -1,0 +1,272 @@
+# 데이터 불러오기
+library(tidyverse)
+library(Car)
+head(Womenlf)
+str(Womenlf)
+
+
+# 변수 partic의 범주 통합하기
+women <- mutate(Womenlf, partic=ifelse(partic %in% c("fulltime","parttime"),"work","not.work")) %>% mutate(partic=factor(partic))
+head(women)
+str(women)
+
+
+# 시드 고정 및 데이터 분리
+set.seed(201452024)
+x.id <- sample(1:nrow(women), nrow(women)*0.2)
+df_test <- women[x.id,]
+df_train <- women[-x.id,]
+
+
+# 산점도 행렬
+library(GGally)
+ggpairs(df_train)
+
+
+# EDA
+df_train %>% ggplot(aes(x=children,fill=partic)) + geom_bar(position="fill")
+df_train %>% ggplot(aes(x=children,y=hincome)) + geom_boxplot()
+
+
+# 요약통계량
+summary(df_train)
+
+
+# 풀모델
+# 절편, hincome, children 변수가 유의적
+fit <- glm(partic~., family=binomial, data=df_train)
+summary(fit)
+
+
+# 검정에 의한 전진선택법
+library(MASS)
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + children)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + hincome)
+addterm(fit.0, fit.full, test="Chisq")     # children, hincome 포함된 모형
+
+
+# 검정에 의한 후진소거법
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+dropterm(fit.full, test="Chisq")
+fit.full <- update(fit.full, . ~ . - region)
+dropterm(fit.full, test="Chisq")           # children, hincome 포함된 모형
+
+
+# 검정에 의한 단계별선택법
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + children)
+dropterm(fit.0, test="Chisq")
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + hincome)
+dropterm(fit.0, test="Chisq")
+addterm(fit.0, fit.full, test="Chisq")           # children, hincome 포함된 모형
+
+
+# stepAIC 기준의 변수 선택
+library(MASS)
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+stepAIC(fit.0, scope=formula(fit.full), k=2, direction="both", trace=FALSE)     # children, hincome 포함된 모형
+
+
+# stepBIC 기준의 변수 선택
+stepAIC(fit.full, k=log(nrow(df_train)), trace=FALSE)     # hincome,children 포함된 모형
+
+
+# 잠정모형
+fit.1 <- glm(partic ~ hincome + children, family=binomial, data=df_train)
+summary(fit.1)
+
+
+# 잠정모형의 선형관계 확인
+residualPlots(fit.1)
+
+
+# 이상값 확인
+influencePlot(fit.1)
+
+
+# 이상값 확인
+df_train %>% filter(partic=="work") %>% summary()
+df_train %>% filter(partic=="not.work") %>% summary()
+df_train[c(60,61,72,73),]
+
+
+# 4개의 데이터가 work 일때 hincome의 이상값이다.
+# 제거 실시
+df_train <- df_train[-c(60,61,72,73),]
+
+
+# 다시 변수 선택
+
+
+# 검정에 의한 전진선택법
+library(MASS)
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + children)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + hincome)
+addterm(fit.0, fit.full, test="Chisq")     # children, hincome 포함된 모형
+
+
+# 검정에 의한 후진소거법
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+dropterm(fit.full, test="Chisq")
+fit.full <- update(fit.full, . ~ . - region)
+dropterm(fit.full, test="Chisq")           # children, hincome 포함된 모형
+
+
+# 검정에 의한 단계별선택법
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + children)
+dropterm(fit.0, test="Chisq")
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + hincome)
+dropterm(fit.0, test="Chisq")
+addterm(fit.0, fit.full, test="Chisq")           # children, hincome 포함된 모형
+
+
+# stepAIC 기준의 변수 선택
+library(MASS)
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+stepAIC(fit.0, scope=formula(fit.full), k=2, direction="both", trace=FALSE)     # children, hincome 포함된 모형
+
+
+# stepBIC 기준의 변수 선택
+stepAIC(fit.full, k=log(nrow(df_train)), trace=FALSE)     # hincome,children 포함된 모형
+
+
+# 잠정모형
+fit.2 <- glm(partic ~ hincome + children, family=binomial, data=df_train)
+summary(fit.2)
+
+
+# 잠정모형의 선형관계 확인
+residualPlots(fit.2)
+
+
+# 이상값 확인
+influencePlot(fit.2)
+
+
+# 이상값 확인
+df_train %>% filter(partic=="work") %>% summary()
+df_train %>% filter(partic=="not.work") %>% summary()
+df_train[c(70),]
+
+
+# 91번 제거
+df_train <- df_train[-c(70),]
+
+
+# 다시 변수 선택
+
+
+# 검정에 의한 전진선택법
+library(MASS)
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + children)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + hincome)
+addterm(fit.0, fit.full, test="Chisq")     # children, hincome 포함된 모형
+
+
+# 검정에 의한 후진소거법
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+dropterm(fit.full, test="Chisq")
+fit.full <- update(fit.full, . ~ . - region)
+dropterm(fit.full, test="Chisq")           # children, hincome 포함된 모형
+
+
+# 검정에 의한 단계별선택법
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + children)
+dropterm(fit.0, test="Chisq")
+addterm(fit.0, fit.full, test="Chisq")
+fit.0 <- update(fit.0, . ~ . + hincome)
+dropterm(fit.0, test="Chisq")
+addterm(fit.0, fit.full, test="Chisq")           # children, hincome 포함된 모형
+
+
+# stepAIC 기준의 변수 선택
+library(MASS)
+fit.full <- glm(partic ~ ., family=binomial, data=df_train)
+fit.0 <- glm(partic ~ 1 , family=binomial, data=df_train)
+stepAIC(fit.0, scope=formula(fit.full), k=2, direction="both", trace=FALSE)     # children, hincome 포함된 모형
+
+
+# stepBIC 기준의 변수 선택
+stepAIC(fit.full, k=log(nrow(df_train)), trace=FALSE)     # hincome,children 포함된 모형
+
+
+# 잠정모형
+fit.3 <- glm(partic ~ hincome + children, family=binomial, data=df_train)
+summary(fit.3)
+
+
+# 잠정모형의 선형관계 확인
+residualPlots(fit.3)
+
+
+# 이상값 확인
+influencePlot(fit.3)
+
+
+# 이상값 없음
+
+
+# 최종모형 선택
+fit.3 <- glm(partic ~ hincome + children, family=binomial, data=df_train)
+summary(fit.3)
+
+
+# 다중공선성
+car::vif(fit.3)
+
+
+# 예측
+
+
+# CCR
+my_table <- mutate(df_test,partic_hat=if_else(predict(fit.3,newdata=dplyr::select(df_test,-partic),type="response")>=0.5,"1","0")) %>% 
+  with(.,table(partic,partic_hat))
+addmargins(my_table)
+sum(diag(my_table)) / sum(my_table) * 100
+
+
+# adj_CCR
+y_max <- max(addmargins(my_table,2))
+(sum(diag(my_table)) - y_max) / sum(my_table) * 100
+
+
+# ROC curve
+library(pROC)
+pred <- predict(fit.3,newdata=df_test, type="response")
+roc(with(df_test,partic), pred, percent=TRUE, plot=TRUE)
+
+
+
+# 설명변수의 값 변화에 따른 여성 직업 참여 확률의 그래프
+str(df_test)
+a <- data.frame(hincome=rep(c(1:50)),region=rep("Ontario"),children=rep(c("absent","present"),each=50),partic=rep(c("not.work","work")))
+prob <- predict(fit.3, newdata=a, type="response")
+a <- data.frame(hincome=rep(c(1:50)),region=rep("Ontario"),children=rep(c("absent","present"),each=50),prob=prob)
+ggplot(data=a) + geom_line(filter(a,children=="absent"),mapping=aes(x=hincome,y=prob,col="Ontario & absent"),size=2) + 
+  geom_line(filter(a,children=="present"),mapping=aes(x=hincome,y=prob,col="Ontario & present"),size=2) + 
+  labs(col="")
+
