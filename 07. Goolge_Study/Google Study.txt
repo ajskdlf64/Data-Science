@@ -1,0 +1,16 @@
+Google ML Study Jam
+
+# ÀÔ¹®¹İ
+Äü·¦ ·¦ #1 : Google Cloud Speech API
+Äü·¦ ·¦ #2 : Cloud Natural Language API
+
+
+# Áß±Ş¹İ
+ÄÚ¼¼¶ó °­ÁÂ #1 : Launching into Machine Learning
+Äü·¦ ·¦ #1: Classify Images of Clouds in the Cloud with AutoML Vision
+
+
+# ½ÉÈ­¹İ
+ÄÚ¼¼¶ó °­ÁÂ #1 : End-to-End Machine Learning with TensorFlow on GCP
+ÄÚ¼¼¶ó °­ÁÂ #2 :  Production Machine Learning Systems
+Äü·¦ Äù½ºÆ® #1 : Machine Learning APIs
